@@ -1,4 +1,17 @@
 # zhihu-topic-spec
-A spider grab the topic spector,for eg. Python spector 
 
-Login code from [fuck-login](https://github.com/xchaoinfo/fuck-login),thanks.
+### 来源
+知乎作为一个知识分享网站汇聚了一批各行各业的优秀人才，相当于一个巨型数据库。                         
+而知乎为了提高它的专业度，前阵子？知乎赋予了好多知乎用户“xx话题优秀回答者”。但似乎知乎并没有提供一个入口可以搜集到这些高质量回答用户。 有的话请告诉我...                      
+本爬虫的作用就是找出这些用户。  
+                       
+                       
+### 用法           
+先用你的知乎帐号登录，然后输入你想寻找的xx话题优秀回答者。比如输入“Python”，会帮你找出一批python话题优秀回答者。                  
+
+### 实现
+实现是这个爬虫先会从你的关注里去找xx话题优秀回答者，如果找到以后，比如找到了一个xx话题优秀回答者，爬虫会继续去这个人的关注里找xx话题优秀回答者，直到它找不到更多的xx话题优秀回答者。所以最好你的关注里有xx话题优秀回答者。如果没有也不要紧，当爬虫在你的关注里找不到xx话题优秀回答者的时候，我会让你输入一个用户id，然后以这个用户作为根结点去寻找xx话题优秀回答者。
+
+### 其它
+* 部分代码参考了[fuck-login](https://github.com/xchaoinfo/fuck-login),[zhihu-python](https://github.com/egrcc/zhihu-python)。                  
+* 项目还在开发中。
