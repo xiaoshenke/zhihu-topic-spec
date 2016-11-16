@@ -37,7 +37,6 @@ class ZhihuSpider():
 		tree = html.fromstring(content)
 		userid = self.process_xpath_source(tree.xpath("//span[@class='token']/text()"))
 		self.grabbed_id.append(userid)
-		print('test get_self_userid %s'%userid)
 		return
 
 	def process_xpath_source(self,source):
@@ -87,7 +86,6 @@ class ZhihuSpider():
 
 	# Todo: 模拟下拉加载更多来拿到所有的关注者
 	def get_followees_from(self,html_source):
-		print('test get_followees_from %s'%html_source)
 		tree = html.fromstring(html_source)
 		followee_num = tree.xpath("//div[@class='zu-main-sidebar']//strong")[0].text
 		for i in xrange((int(followee_num) - 1) / 20 + 1):
@@ -98,10 +96,8 @@ class ZhihuSpider():
 			else:
 				post_url = "http://www.zhihu.com/node/ProfileFolloweesListV2"
                 _xsrf = tree.xpath("//input[@name='_xsrf']/@value")[0]
-                print('test _xsrf is %s'%_xsrf)
                 offset = i * 20
                 hash_id = re.findall("hash_id&quot;: &quot;(.*)&quot;},", html_source)[0]
-                print('test hash_id %s'%hash_id)
                 params = json.dumps({"offset": offset, "order_by": "created", "hash_id": hash_id})
                 data = {
                     '_xsrf': _xsrf,
@@ -115,7 +111,7 @@ class ZhihuSpider():
                 	'Host': "www.zhihu.com",
                 	'Referer': referer_url
                 }
-                r_post = requests.post(post_url,data=data, headers=self.headers,verify=False)
+                r_post = requests.post(post_url,cookies=self.cookies,data=data, headers=header,verify=False)
                 print('test r_post result %s'%r_post)
                 followee_list = r_post.json()["msg"]
                 for j in xrange(min(followee_num - i * 20, 20)):
