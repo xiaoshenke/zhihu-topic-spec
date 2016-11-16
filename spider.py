@@ -4,6 +4,9 @@ import requests
 import re
 from lxml import html
 from db import ZhihuUserProfile
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 try:
     input = raw_input
@@ -29,6 +32,7 @@ class ZhihuSpider():
 		if r.status_code != 200:
 			print('检查你的网路！')
 			return
+		r.encoding = 'gbk'
 		content = r.text
 		tree = html.fromstring(content)
 		userid = self.process_xpath_source(tree.xpath("//span[@class='token']/text()"))
@@ -70,24 +74,21 @@ class ZhihuSpider():
 		content = r.text
 		self.parse_user_profile(content,first)
 		return 
-
+		
 	# Todo
  	def deal_followee_node(self,node):
  		name = node.xpath("//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text
  		link = node.xpath("//span[@class='author-link-line']//a/@href")[0]
  		userid = re.search(r'(?<=people[/]).+',link).group(0)
- 		print('test deal_followee_node link %s'%link)
- 		spector = node.xpath("//span[@class='badge-summary']//a")[0].text
- 		print('test deal_followee_node spector %s'%spector)
- 		print('test deal_followee_node self.topic+self.spector %s'%(self.topic+self.spector))
+ 		spector = node.xpath("//span[@class='badge-summary']//a")[0].text.strip()
  		if spector:
- 			if re.search(r'%s'%(self.spector.strip()),spector):
+ 			selfstring = self.topic.strip()+self.spector.strip()
+  			if re.search(r'%s'%selfstring,spector.encode('utf-8')): #这里必须要encode成utf-8格式
  				print('test we find a %s spector'%self.topic)
  		return;
 
 	# Todo: 模拟下拉加载更多来拿到所有的关注者
 	def get_followees_from(self,html_source):
-		print('test begin get_followees_from')
 		tree = html.fromstring(html_source)
 		followee_num = tree.xpath("//div[@class='zu-main-sidebar']//strong")[0].text
 		for i in xrange((int(followee_num) - 1) / 20 + 1):
@@ -103,7 +104,6 @@ class ZhihuSpider():
 
 	#parse user profile
 	def parse_user_profile(self, html_source,first):
-		print('test begin parse_user_profile')
 		self.get_followees_from(html_source)
         
 
