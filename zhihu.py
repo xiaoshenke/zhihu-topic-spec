@@ -18,7 +18,7 @@ except:
 
 
 ##### Login Request Header
-agent = 'Mozilla/5.0 (Windows NT 5.1; rv:33.0) Gecko/20100101 Firefox/33.0'
+agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'
 headers = {
     "Host": "www.zhihu.com",
     "Referer": "https://www.zhihu.com/",
@@ -69,6 +69,7 @@ def is_login():
     # 通过查看用户个人信息来判断是否已经登录
     url = "https://www.zhihu.com/settings/profile"
     login_res = session.get(url, headers=headers, allow_redirects=False)
+    print('test is_login %s'%login_res)
     if login_res.status_code == 200:
         return True
     else:
@@ -103,6 +104,7 @@ def login(account,password):
         # 不需要验证码直接登录成功
         login_page = session.post(post_url, data=postdata, headers=headers)
         login_code = login_page.text
+        print('test login_code:%s'%login_page)
         #print(login_page.status_code)
         #print(login_code)
     except:
