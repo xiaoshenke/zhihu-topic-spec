@@ -77,6 +77,9 @@ class ZhihuSpider():
 	
 	# from followee node get information such as username,userid,if user is a topic spector	
  	def deal_followee_node(self,node):
+ 		#name = node.xpath("//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
+ 		name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
+ 		print('deal_followee_node name %s'%name)
  		badge_summary = node.xpath("//span[@class='badge-summary']//a")
  		if not badge_summary:
  			return
@@ -92,6 +95,40 @@ class ZhihuSpider():
  					self.grabbed_id.append(userid) # 存入抓取的id		
  		return
 
+ 	def get_followees_node_from_page(self,index,followee_num,html_source,tree):
+ 		post_url = "https://www.zhihu.com/node/ProfileFolloweesListV2"
+ 		hash_id=re.findall("hash_id&quot;: &quot;(.*)&quot;},",html_source)[0]
+ 		offset = index*20
+ 		#tree = html.fromstring(html_source)
+ 		#tree2 = html.fromstring(html_source)
+ 		_xsrf = tree.xpath("//input[@name='_xsrf']/@value")[0]
+ 		params = json.dumps({"offset": offset, "order_by": "created", "hash_id": hash_id})
+ 		data = {
+ 			'_xsrf': _xsrf,
+ 			'method': "next",
+ 			'params': params
+ 		}
+ 		id = self.current_grab_id
+ 		referer_url = self.people_url+'%s'%id+self.followee
+ 		header = {
+ 			'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36",
+ 			'Host': "www.zhihu.com",
+ 			'Referer': referer_url,
+ 			'Origin': "https://www.zhihu.com",
+ 			'Content-Type': "application/x-www-form-urlencoded; charset=UTF-8",
+ 			'Content-Length': "132",
+ 			'Accept-Language': "zh-CN,zh;q=0.8,en;q=0.6",
+ 			'Accept-Encoding': "gzip, deflate, br"
+ 		}
+ 		r_post = requests.post(post_url,cookies=self.cookies,data=data, headers=header,verify=True)
+ 		if r_post.status_code == 200:
+ 			followee_list = r_post.json()["msg"]
+ 			for j in range(min(int(followee_num) - index * 20, 20)):
+ 				self.deal_followee_node(html.fromstring(followee_list[j]))
+ 		else:
+ 			print('error in get porfileFolloweesListV2 page%s'%index)
+
+
  	# followees page has a 'scroll down to load more' effect,so we have to deal with that to get "followee node" list[]
 	def get_followees_from(self,html_source):
 		tree = html.fromstring(html_source)
@@ -99,40 +136,12 @@ class ZhihuSpider():
 		followee_page_num = (int(followee_num) - 1) / 20 + 1
 		for i in range(followee_page_num):
 			if i == 0:
-				if False:
-					for node in tree.xpath("//div[@class='zm-list-content-medium']"):
-						self.deal_followee_node(node)
+				#nodes = tree.xpath("//div[@class='zm-list-content-medium']")
+				nodes = tree.xpath("//div[@class='zm-profile-card zm-profile-section-item zg-clear no-hovercard']")
+				for index in range(len(nodes)):
+					self.deal_followee_node(nodes[index])
 			else:
-				post_url = "https://www.zhihu.com/node/ProfileFolloweesListV2"
-                _xsrf = tree.xpath("//input[@name='_xsrf']/@value")[0]
-                offset = i * 20
-                offset = 20
-                hash_id = re.findall("hash_id&quot;: &quot;(.*)&quot;},", html_source)[0]
-                params = json.dumps({"offset": offset, "order_by": "created", "hash_id": hash_id})
-                data = {
-                    '_xsrf': _xsrf,
-                    'method': "next",
-                    'params': params
-                }
-                id = self.current_grab_id
-                referer_url = self.people_url+'%s'%id+self.followee
-                header = {
-                	'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36",
-                	'Host': "www.zhihu.com",
-                	'Referer': referer_url,
-                	'Origin': "https://www.zhihu.com",
-                	'Content-Type': "application/x-www-form-urlencoded; charset=UTF-8",
-                	'Content-Length': "132",
-                	'Accept-Language': "zh-CN,zh;q=0.8,en;q=0.6",
-                	'Accept-Encoding': "gzip, deflate, br"
-                }
-                r_post = requests.post(post_url,cookies=self.cookies,data=data, headers=header,verify=True)
-                if r_post.status_code == 200:
-                	followee_list = r_post.json()["msg"]
-                	for j in range(min(int(followee_num) - i * 20, 20)):
-                		self.deal_followee_node(html.fromstring(followee_list[j])) 
-                else:
-                	print('error in get porfileFolloweesListV2 page%s'%i)
+				self.get_followees_node_from_page(i,followee_num,html_source,tree)
 		return
 
 	# parse user profile,if 'first' is True we don't save it to db,other wise we should save it
