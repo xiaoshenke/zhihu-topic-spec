@@ -79,20 +79,28 @@ class ZhihuSpider():
  	def deal_followee_node(self,node):
  		#name = node.xpath("//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
  		name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
- 		print('deal_followee_node name %s'%name)
- 		badge_summary = node.xpath("//span[@class='badge-summary']//a")
+ 		#print('deal_followee_node name %s'%name)
+ 		badge_summary = node.xpath(".//span[@class='badge-summary']//a")
  		if not badge_summary:
  			return
  		spector = badge_summary[0].text.strip()
  		if spector:
+ 			#print('find a user who is %s spector'%spector)
  			selfstring = self.topic.strip()+self.spector.strip()
   			if re.search(r'%s'%selfstring,spector.encode('utf-8')): #这里必须要encode成utf-8格式
-  				name = node.xpath("//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
- 				print('test we find a %s spector,name %s'%(self.topic,name))
- 				link = node.xpath("//span[@class='author-link-line']//a/@href")[0]	
- 				userid = re.search(r'(?<=people[/]).+',link).group(0)
+  				name = node.xpath(".//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
+ 				print('we find a %s spector,name %s'%(self.topic,name))
+ 				link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]	
+ 				people_id = re.search(r'(?<=people[/]).+',link)
+ 				if not people_id:
+ 					return
+ 				userid = people_id.group(0)
  				if not userid in self.grabbed_id:
- 					self.grabbed_id.append(userid) # 存入抓取的id		
+ 					self.grabbed_id.append(userid) # 存入抓取的id
+ 				else:
+ 					pass
+ 			else:
+ 				pass		
  		return
 
  	def get_followees_node_from_page(self,index,followee_num,html_source,tree):
@@ -152,9 +160,9 @@ class ZhihuSpider():
 	# grab some topic for eg,Python,数学
 	def grab_topic(self,topic):
 		current_index = 0
-		while (current_index < len(self.grabbed_id) and current_index < 50):
+		while (current_index < len(self.grabbed_id) and len(self.grabbed_id) < 20):
 			self.current_grab_id = self.grabbed_id[current_index]
-			print('grab index:%s userid:%s'%(current_index,self.current_grab_id))
+			print('begin to grab index:%s user, userid:%s'%(current_index,self.current_grab_id))
 			if current_index ==0:
 				self.grab_from_currentid(True)
 			else:
