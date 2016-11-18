@@ -14,4 +14,7 @@
 
 ### 其它
 * 部分代码参考了[fuck-login](https://github.com/xchaoinfo/fuck-login),[zhihu-python](https://github.com/egrcc/zhihu-python)。                  
-* 项目还在开发中。
+
+
+### Todo
+* integrate multi-thread
