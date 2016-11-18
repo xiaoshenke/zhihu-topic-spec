@@ -17,6 +17,7 @@ try:
 except:
     pass
 
+__max_user_number__ = 20
 
 class ZhihuSpider():
 	people_url = 'https://www.zhihu.com/people/'
@@ -60,7 +61,7 @@ class ZhihuSpider():
 	# grab https://www.zhihu.com/people/userid/followees page from internet
 	# 若是第一个(第三个参数为true) 由于是整个爬虫的root。该root用户的信息不存入数据库
 	# 否则存入数据库
-	def grab_from_currentid(self,first):
+	def grab_from_currentid(self):
 		id = self.current_grab_id
 		url = self.people_url+'%s'%id+self.followee
 		try:
@@ -72,7 +73,7 @@ class ZhihuSpider():
 			print('check your network！')
 			return
 		content = r.text
-		self.parse_user_profile(content,first)
+		self.parse_user_profile(content)
 		return 
 	
 	# from followee node get information such as username,userid,if user is a topic spector	
@@ -85,26 +86,24 @@ class ZhihuSpider():
  			return
  		spector = badge_summary[0].text.strip()
  		if spector:
- 			#print('find a user who is %s spector'%spector)
  			selfstring = self.topic.strip()+self.spector.strip()
   			if re.search(r'%s'%selfstring,spector.encode('utf-8')): #这里必须要encode成utf-8格式
   				name = node.xpath(".//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
- 				print('we find a %s spector,name %s'%(self.topic,name))
  				link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]	
  				people_id = re.search(r'(?<=people[/]).+',link)
  				if not people_id:
  					return
  				userid = people_id.group(0)
- 				if not userid in self.grabbed_id:
+ 				if userid in self.grabbed_id:
+ 					pass
+ 				else:
  					self.save_spector_node(node)
  					self.grabbed_id.append(userid) # 存入抓取的id
- 				else:
- 					pass
  			else:
  				pass		
  		return
 
- 	# Todo 记录的内容:用户uid,用户id,用户的个人说明,用户的xx话题优秀回答者,是否已关注,被关注数,提问数,回答数,赞同数 
+ 	# 记录的内容:用户uid,用户id,用户的个人说明,用户的xx话题优秀回答者,是否已关注,被关注数,提问数,回答数,赞同数 
  	def save_spector_node(self,node):
  		link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
  		user_id = 'invalid user'
@@ -114,29 +113,29 @@ class ZhihuSpider():
  		else:
  			pass
  		user_name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
- 		user_isfollow = False
+ 		user_isfollow = "False"
  		if node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small nth-0']"):
- 			user_isfollow = True
- 		elif node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small]"):
- 			user_isfollow = True
+ 			user_isfollow = "True"
+ 		elif node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small']"):
+ 			user_isfollow = "True"
  		else:
  			pass
- 		user_spector = 'not a spector'
+ 		user_spector = "not a spector"
  		badge_summary = node.xpath(".//span[@class='badge-summary']//a")
  		if badge_summary:
  			user_spector = badge_summary[0].text.strip()
  		else:
  			pass
- 		user_bio = 'no bio'
+ 		user_bio = "no bio"
  		bio = node.xpath(".//span[@class='bio']")
  		if bio:
  			user_bio = bio[0].text #unicode-->utf8??
  		else:
  			pass
- 		user_followee_num = 0
- 		user_ask = 0
- 		user_answer = 0
- 		user_agree = 0
+ 		user_followee_num = "0 关注者"
+ 		user_ask = "0 提问"
+ 		user_answer = "0 回答"
+ 		user_agree = "0 赞同"
  		details = node.xpath(".//a[@class='zg-link-gray-normal']")
  		if details:
  			user_followee_num = details[0].text
@@ -145,15 +144,24 @@ class ZhihuSpider():
  			user_agree = details[3].text
  		else:
  			pass
- 		#print('test save_spector_node id:%s name:%s isFollow:%s spector:%s bio:%s followee:%s ask:%s answer:%s agree:%s'%(user_id,user_name,user_isfollow,user_spector,user_bio,user_followee_num,user_ask,user_answer,user_agree))
+ 		user = ZhihuUserProfile(
+ 			user_id=user_id,
+ 			user_name=user_name,
+ 			user_isfollow=user_isfollow,
+ 			user_spector=user_spector,
+ 			user_bio=user_bio,
+ 			user_followee_num=user_followee_num,
+ 			user_ask=user_ask,
+ 			user_answer=user_answer,
+ 			user_agree=user_agree)
+ 		user.save()
+ 		print('save user:%s'%user_name)
  		return
 
  	def get_followees_node_from_page(self,index,followee_num,html_source,tree):
  		post_url = "https://www.zhihu.com/node/ProfileFolloweesListV2"
  		hash_id=re.findall("hash_id&quot;: &quot;(.*)&quot;},",html_source)[0]
  		offset = index*20
- 		#tree = html.fromstring(html_source)
- 		#tree2 = html.fromstring(html_source)
  		_xsrf = tree.xpath("//input[@name='_xsrf']/@value")[0]
  		params = json.dumps({"offset": offset, "order_by": "created", "hash_id": hash_id})
  		data = {
@@ -197,21 +205,17 @@ class ZhihuSpider():
 				self.get_followees_node_from_page(i,followee_num,html_source,tree)
 		return
 
-	# parse user profile,if 'first' is True we don't save it to db,other wise we should save it
-	def parse_user_profile(self, html_source,first):
+	def parse_user_profile(self, html_source):
 		self.get_followees_from(html_source)
         
 
 	# grab some topic for eg,Python,数学
 	def grab_topic(self,topic):
 		current_index = 0
-		while (current_index < len(self.grabbed_id) and len(self.grabbed_id) < 20):
+		while (current_index < len(self.grabbed_id) and len(self.grabbed_id) < __max_user_number__):
 			self.current_grab_id = self.grabbed_id[current_index]
 			print('begin to grab index:%s user, userid:%s'%(current_index,self.current_grab_id))
-			if current_index ==0:
-				self.grab_from_currentid(True)
-			else:
-				self.grab_from_currentid(False)
+			self.grab_from_currentid()
 			current_index = current_index+1
 		if len(self.grabbed_id) == 1:
 			# we can't find any spector in our followees,so we type in a specific userid,then begin with him
@@ -219,9 +223,11 @@ class ZhihuSpider():
 			self.grabbed_id[0] = userid
 			self.grab_topic(self.topic)
 		else:
-			pass 
+			self.print_all_grabbed_user()
 		return
 
-	# Todo
-	def store_data_to_mongo(self):
+	def print_all_grabbed_user(self):
+		print('we grab user as below:')
+		for user in ZhihuUserProfile.objects:
+			print('%s, %s, %s, %s, 是否已关注:%s'%(user.user_name,user.user_spector,user.user_followee_num,user.user_agree,user.user_isfollow))
 		return
