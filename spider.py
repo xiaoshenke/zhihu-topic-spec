@@ -96,11 +96,56 @@ class ZhihuSpider():
  					return
  				userid = people_id.group(0)
  				if not userid in self.grabbed_id:
+ 					self.save_spector_node(node)
  					self.grabbed_id.append(userid) # 存入抓取的id
  				else:
  					pass
  			else:
  				pass		
+ 		return
+
+ 	# Todo 记录的内容:用户uid,用户id,用户的个人说明,用户的xx话题优秀回答者,是否已关注,被关注数,提问数,回答数,赞同数 
+ 	def save_spector_node(self,node):
+ 		link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
+ 		user_id = 'invalid user'
+ 		people_id = re.search(r'(?<=people[/]).+',link)
+ 		if people_id:
+ 			user_id = people_id.group(0)
+ 		else:
+ 			pass
+ 		user_name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
+ 		user_isfollow = False
+ 		if node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small nth-0']"):
+ 			user_isfollow = True
+ 		elif node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small]"):
+ 			user_isfollow = True
+ 		else:
+ 			pass
+ 		user_spector = 'not a spector'
+ 		badge_summary = node.xpath(".//span[@class='badge-summary']//a")
+ 		if badge_summary:
+ 			user_spector = badge_summary[0].text.strip()
+ 		else:
+ 			pass
+ 		user_bio = 'no bio'
+ 		bio = node.xpath(".//span[@class='bio']")
+ 		if bio:
+ 			user_bio = bio[0].text #unicode-->utf8??
+ 		else:
+ 			pass
+ 		user_followee_num = 0
+ 		user_ask = 0
+ 		user_answer = 0
+ 		user_agree = 0
+ 		details = node.xpath(".//a[@class='zg-link-gray-normal']")
+ 		if details:
+ 			user_followee_num = details[0].text
+ 			user_ask = details[1].text
+ 			user_answer = details[2].text
+ 			user_agree = details[3].text
+ 		else:
+ 			pass
+ 		#print('test save_spector_node id:%s name:%s isFollow:%s spector:%s bio:%s followee:%s ask:%s answer:%s agree:%s'%(user_id,user_name,user_isfollow,user_spector,user_bio,user_followee_num,user_ask,user_answer,user_agree))
  		return
 
  	def get_followees_node_from_page(self,index,followee_num,html_source,tree):
