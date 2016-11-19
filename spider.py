@@ -58,9 +58,6 @@ class ZhihuSpider():
 		self.grab_topic(self.topic)
 
 
-	# grab https://www.zhihu.com/people/userid/followees page from internet
-	# 若是第一个(第三个参数为true) 由于是整个爬虫的root。该root用户的信息不存入数据库
-	# 否则存入数据库
 	def grab_from_currentid(self):
 		id = self.current_grab_id
 		url = self.people_url+'%s'%id+self.followee
@@ -75,19 +72,18 @@ class ZhihuSpider():
 		content = r.text
 		self.parse_user_profile(content)
 		return 
-	
-	# from followee node get information such as username,userid,if user is a topic spector	
- 	def deal_followee_node(self,node):
- 		#name = node.xpath("//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
+
+ 	def deal_followee_node(self,node):	
  		name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
- 		#print('deal_followee_node name %s'%name)
  		badge_summary = node.xpath(".//span[@class='badge-summary']//a")
  		if not badge_summary:
  			return
  		spector = badge_summary[0].text.strip()
  		if spector:
- 			selfstring = self.topic.strip()+self.spector.strip()
-  			if re.search(r'%s'%selfstring,spector.encode('utf-8')): #这里必须要encode成utf-8格式
+ 			spector_utf8 = spector.encode('utf-8')
+ 			if not re.search(r'%s'%self.spector.strip(),spector_utf8): # 有的知乎用户可能有超过一个话题优秀回答者头衔
+ 				return
+  			if re.search(r'%s'%self.topic.strip(),spector_utf8): #这里必须要encode成utf-8格式
   				name = node.xpath(".//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
  				link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]	
  				people_id = re.search(r'(?<=people[/]).+',link)
@@ -98,7 +94,7 @@ class ZhihuSpider():
  					pass
  				else:
  					self.save_spector_node(node)
- 					self.grabbed_id.append(userid) # 存入抓取的id
+ 					self.grabbed_id.append(userid) 
  			else:
  				pass		
  		return
@@ -197,7 +193,6 @@ class ZhihuSpider():
 		followee_page_num = (int(followee_num) - 1) / 20 + 1
 		for i in range(followee_page_num):
 			if i == 0:
-				#nodes = tree.xpath("//div[@class='zm-list-content-medium']")
 				nodes = tree.xpath("//div[@class='zm-profile-card zm-profile-section-item zg-clear no-hovercard']")
 				for index in range(len(nodes)):
 					self.deal_followee_node(nodes[index])
