@@ -11,13 +11,13 @@ import re
 import time
 import os.path
 from spider import ZhihuSpider
+from queue import __MAX_USER_NUMBER__
 try:
     from PIL import Image
 except:
     pass
+from db import ZhihuUserProfile
 
-
-##### Login Request Header
 agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'
 headers = {
     "Host": "www.zhihu.com",
@@ -130,4 +130,42 @@ if __name__ == '__main__':
     print('您已登录')
 
     ZhihuSpider(headers,session.cookies)
+
+# 知乎爬虫引擎
+class ZhihuSpiderStarter():
+    rootid = 'invalid'
+    rootid_is_spector = False
+
+    def __init__(self,header,cookie):
+        self.header = header
+        self.cookie = cookie
+        self.rootid = self.get_self_userid() #携程？
+        self.topic = input('请输入需要抓取的领域\n>  ')
+        self.begin_spider_loop()
+        return
+
+    def begin_spider_loop(self):
+        return
+
+    def get_self_userid(self):
+        return 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

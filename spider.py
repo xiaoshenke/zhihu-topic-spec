@@ -6,6 +6,9 @@ import requests
 import re
 import json
 from lxml import html
+
+from queue import add_grabid_to_queue,in_grab_queue,is_queue_empty,get_grabid_total_number,reset_queue_head,__MAX_USER_NUMBER__,get_grabid_from_queue
+
 from db import ZhihuUserProfile
 import sys
 
@@ -21,8 +24,7 @@ __max_user_number__ = 20
 
 class ZhihuSpider():
 	people_url = 'https://www.zhihu.com/people/'
-	followee = '/followees'
-	grabbed_id = []  
+	followee = '/followees' 
 	spector = '话题优秀回答者'
 	current_grab_id = -1
 
@@ -40,7 +42,7 @@ class ZhihuSpider():
 		content = r.text
 		tree = html.fromstring(content)
 		userid = self.process_xpath_source(tree.xpath("//span[@class='token']/text()"))
-		self.grabbed_id.append(userid)
+		reset_queue_head(userid)
 		return
 
 	# help func to get the first xpath result
@@ -90,11 +92,14 @@ class ZhihuSpider():
  				if not people_id:
  					return
  				userid = people_id.group(0)
- 				if userid in self.grabbed_id:
+ 				if in_grab_queue(userid):
  					pass
  				else:
+ 					if get_grabid_total_number() > __MAX_USER_NUMBER__:
+ 						return
  					self.save_spector_node(node)
- 					self.grabbed_id.append(userid) 
+ 					if not add_grabid_to_queue(userid):
+ 						print('add grabid to queue error')
  			else:
  				pass		
  		return
@@ -207,15 +212,15 @@ class ZhihuSpider():
 	# grab some topic for eg,Python,数学
 	def grab_topic(self,topic):
 		current_index = 0
-		while (current_index < len(self.grabbed_id) and len(self.grabbed_id) < __max_user_number__):
-			self.current_grab_id = self.grabbed_id[current_index]
+		while not is_queue_empty() and get_grabid_total_number() < __MAX_USER_NUMBER__:
+			self.current_grab_id = get_grabid_from_queue()
 			print('begin to grab index:%s user, userid:%s'%(current_index,self.current_grab_id))
 			self.grab_from_currentid()
 			current_index = current_index+1
-		if len(self.grabbed_id) == 1:
+		if get_grabid_total_number == 1:
 			# we can't find any spector in our followees,so we type in a specific userid,then begin with him
 			userid = input('you are not following any topic:%s spector,you should type in a userid who is a spector\n> '%self.topic)
-			self.grabbed_id[0] = userid
+			reset_queue_head(userid)
 			self.grab_topic(self.topic)
 		else:
 			self.print_all_grabbed_user()
