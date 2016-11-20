@@ -7,6 +7,8 @@ import re
 import json
 from lxml import html
 
+import threading
+
 #import gevent.monkey
 #gevent.monkey.patch_socket()
 #gevent.monkey.patch_ssl()
@@ -14,7 +16,7 @@ from lxml import html
 
 ########## FIXME: gvent make @get_followees_from_page return Http:403
 
-from queue import add_grabid_to_queue,can_add_to_queue,get_grabid_total_number,reset_queue_head,__MAX_USER_NUMBER__
+from queue import add_grabid_to_queue,can_add_to_queue
 
 from db import ZhihuUserProfile
 import sys
@@ -26,6 +28,72 @@ try:
     input = raw_input
 except:
     pass
+
+total_gf_thread_num = 0 # TODO: python threadpool??
+
+def save_spector(node):
+	link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
+ 	user_id = 'invalid user'
+ 	people_id = re.search(r'(?<=people[/]).+',link)
+ 	if people_id:
+ 		user_id = people_id.group(0)
+ 	else:
+ 		pass
+ 	user_name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
+ 	user_isfollow = "False"
+ 	if node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small nth-0']"):
+ 		user_isfollow = "True"
+ 	elif node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small']"):
+ 		user_isfollow = "True"
+ 	else:
+ 		pass
+ 	user_spector = "not a spector"
+ 	badge_summary = node.xpath(".//span[@class='badge-summary']//a")
+ 	if badge_summary:
+ 		user_spector = badge_summary[0].text.strip()
+ 	else:
+ 		pass
+ 	user_bio = "no bio"
+ 	bio = node.xpath(".//span[@class='bio']")
+ 	if bio:
+ 		user_bio = bio[0].text #unicode-->utf8??
+ 	else:
+ 		pass
+ 	user_followee_num = "0 关注者"
+ 	user_ask = "0 提问"
+ 	user_answer = "0 回答"
+ 	user_agree = "0 赞同"
+ 	details = node.xpath(".//a[@class='zg-link-gray-normal']")
+ 	if details:
+ 		user_followee_num = details[0].text
+ 		user_ask = details[1].text
+ 		user_answer = details[2].text
+ 		user_agree = details[3].text
+ 	else:
+ 		pass
+ 	user = ZhihuUserProfile(
+ 		user_id=user_id,
+ 		user_name=user_name,
+ 		user_isfollow=user_isfollow,
+ 		user_spector=user_spector,
+ 		user_bio=user_bio,
+ 		user_followee_num=user_followee_num,
+ 		user_ask=user_ask,
+ 		user_answer=user_answer,
+ 		user_agree=user_agree)
+ 	user.save()
+ 	print('save user:%s'%user_name)
+ 	return
+
+# 有的用户的关注比较多 可能有n多页 每一页都需要重新请求 因此把这个封装成一个线程
+class GetFolloweesThread(threading.Thread):
+	def __init__(self):
+		threading.Thread.__init__(self)
+		return
+
+	# TODO: to be finished 如果有n页数据 则开n个线程 直到所有线程都跑完,才算抓取这个用户的数据任务完成 所以这里有一个线程同步的过程
+	def run(self):
+		return	   
 
 __PEOPLE_URL__ = 'https://www.zhihu.com/people/'
 __FOLLOWEE__ = '/followees' 
@@ -84,66 +152,12 @@ class ZhihuSpider():
  					return
  				userid = people_id.group(0)
  				if can_add_to_queue(userid):
- 					self.save_spector(node)
+ 					save_spector(node)
  					add_grabid_to_queue(userid)
  				else:
  					pass
  			else:
  				pass		
- 		return
-
- 	def save_spector(self,node):
- 		link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
- 		user_id = 'invalid user'
- 		people_id = re.search(r'(?<=people[/]).+',link)
- 		if people_id:
- 			user_id = people_id.group(0)
- 		else:
- 			pass
- 		user_name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
- 		user_isfollow = "False"
- 		if node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small nth-0']"):
- 			user_isfollow = "True"
- 		elif node.xpath(".//button[@class='zg-btn zg-btn-unfollow zm-rich-follow-btn small']"):
- 			user_isfollow = "True"
- 		else:
- 			pass
- 		user_spector = "not a spector"
- 		badge_summary = node.xpath(".//span[@class='badge-summary']//a")
- 		if badge_summary:
- 			user_spector = badge_summary[0].text.strip()
- 		else:
- 			pass
- 		user_bio = "no bio"
- 		bio = node.xpath(".//span[@class='bio']")
- 		if bio:
- 			user_bio = bio[0].text #unicode-->utf8??
- 		else:
- 			pass
- 		user_followee_num = "0 关注者"
- 		user_ask = "0 提问"
- 		user_answer = "0 回答"
- 		user_agree = "0 赞同"
- 		details = node.xpath(".//a[@class='zg-link-gray-normal']")
- 		if details:
- 			user_followee_num = details[0].text
- 			user_ask = details[1].text
- 			user_answer = details[2].text
- 			user_agree = details[3].text
- 		else:
- 			pass
- 		user = ZhihuUserProfile(
- 			user_id=user_id,
- 			user_name=user_name,
- 			user_isfollow=user_isfollow,
- 			user_spector=user_spector,
- 			user_bio=user_bio,
- 			user_followee_num=user_followee_num,
- 			user_ask=user_ask,
- 			user_answer=user_answer,
- 			user_agree=user_agree)
- 		user.save()
- 		print('save user:%s'%user_name)
  		return
 
 	def get_followees_from_page(self,index):

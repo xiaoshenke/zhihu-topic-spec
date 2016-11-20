@@ -124,7 +124,7 @@ except:
 # 知乎爬虫引擎
 class ZhihuSpiderStarter():
     rootid = 'invalid'
-    rootid_is_spector = False
+    rootid_is_spector = False # TODO:若该用户是spector 则要存入数据库
 
     def __init__(self,header,cookie):
         self.header = header
