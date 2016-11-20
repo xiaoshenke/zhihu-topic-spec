@@ -12,13 +12,12 @@ import time
 from lxml import html
 import os.path
 from spider import ZhihuSpider
-from queue import __MAX_USER_NUMBER__
 try:
     from PIL import Image
 except:
     pass
 from db import ZhihuUserProfile
-from queue import reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
+from queue import __MAX_USER_NUMBER__,reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
 
 agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'
 headers = {
@@ -157,9 +156,7 @@ class ZhihuSpiderStarter():
 
     def get_self_userid(self):
         url = "https://www.zhihu.com/settings/profile"
-        print('get_self_userid headers:%s'%self.header)
         try:
-            print('do request')
             r =  requests.get(url,cookies=self.cookie,headers=self.header,verify=False)
         except:
             print('get setting fail')

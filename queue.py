@@ -41,9 +41,13 @@ def is_queue_empty():
 	global grab_id_queue
 	return grab_id_queue.empty()	
 
-def in_grab_queue(grab_id):
+def can_add_to_queue(grab_id):
 	global grad_id_list
-	return (grab_id in grad_id_list)
+	global __MAX_USER_NUMBER__
+	if grab_id not in grad_id_list and get_grabid_total_number <= __MAX_USER_NUMBER__:
+		return True
+	else:
+		return False
 
 def reset_queue_head(grab_id):
 	global grab_id_num

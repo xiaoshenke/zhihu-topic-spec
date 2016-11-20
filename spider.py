@@ -13,9 +13,8 @@ from lxml import html
 #import gevent
 
 ########## FIXME: gvent make @get_followees_from_page return Http:403
-########## TODO: multi-thread
 
-from queue import add_grabid_to_queue,in_grab_queue,is_queue_empty,get_grabid_total_number,reset_queue_head,__MAX_USER_NUMBER__,get_grabid_from_queue
+from queue import add_grabid_to_queue,can_add_to_queue,get_grabid_total_number,reset_queue_head,__MAX_USER_NUMBER__
 
 from db import ZhihuUserProfile
 import sys
@@ -56,19 +55,18 @@ class ZhihuSpider():
 		self.parse_followees()
 		return
 
-	# followees page has a 'scroll down to load more' effect,so we have to deal with that to get "followee node" list[]
 	def parse_followees(self):
 		page_num = (int(self.followees_total_num) - 1) / 20 + 1
 		for i in range(page_num):
 			if i == 0:
 				nodes = self.tree.xpath("//div[@class='zm-profile-card zm-profile-section-item zg-clear no-hovercard']")
 				for index in range(len(nodes)):
-					self.deal_followee_node(nodes[index])
+					self.parse_followee_node(nodes[index])
 			else:
 				self.get_followees_from_page(i)
 		return
 
-	def deal_followee_node(self,node):	
+	def parse_followee_node(self,node):	
  		name = node.xpath(".//a[@class='zm-item-link-avatar']/@title")[0]
  		badge_summary = node.xpath(".//span[@class='badge-summary']//a")
  		if not badge_summary:
@@ -76,7 +74,7 @@ class ZhihuSpider():
  		spector = badge_summary[0].text.strip()
  		if spector:
  			spector_utf8 = spector.encode('utf-8')
- 			if not re.search(r'%s'%__SPECTOR__.strip(),spector_utf8): # 有的知乎用户可能有超过一个话题优秀回答者头衔
+ 			if not re.search(r'%s'%__SPECTOR__.strip(),spector_utf8): #有的知乎用户可能有超过一个话题优秀回答者头衔
  				return
   			if re.search(r'%s'%self.topic.strip(),spector_utf8): #这里必须要encode成utf-8格式
   				name = node.xpath(".//span[@class='author-link-line']//a[@class='zg-link author-link']")[0].text	
@@ -85,19 +83,15 @@ class ZhihuSpider():
  				if not people_id:
  					return
  				userid = people_id.group(0)
- 				if in_grab_queue(userid):
- 					pass
- 				else:
- 					if get_grabid_total_number() > __MAX_USER_NUMBER__:
- 						return
+ 				if can_add_to_queue(userid):
  					self.save_spector(node)
- 					if not add_grabid_to_queue(userid):
- 						print('add grabid to queue error')
+ 					add_grabid_to_queue(userid)
+ 				else:
+ 					pass
  			else:
  				pass		
  		return
 
- 	# 记录的内容:用户uid,用户id,用户的个人说明,用户的xx话题优秀回答者,是否已关注,被关注数,提问数,回答数,赞同数 
  	def save_spector(self,node):
  		link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
  		user_id = 'invalid user'
@@ -178,6 +172,6 @@ class ZhihuSpider():
  		if r_post.status_code == 200:
  			followee_list = r_post.json()["msg"]
  			for j in range(min(int(self.followees_total_num) - index * 20, 20)):
- 				self.deal_followee_node(html.fromstring(followee_list[j]))
+ 				self.parse_followee_node(html.fromstring(followee_list[j]))
  		else:
  			print('error in get porfileFolloweesListV2 page%s'%index)
