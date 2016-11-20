@@ -7,6 +7,13 @@ import re
 import json
 from lxml import html
 
+#import gevent.monkey
+#gevent.monkey.patch_socket()
+#gevent.monkey.patch_ssl()
+#import gevent
+
+########## FIXME: gvent make @get_followees_node_from_page return Http:403
+
 from queue import add_grabid_to_queue,in_grab_queue,is_queue_empty,get_grabid_total_number,reset_queue_head,__MAX_USER_NUMBER__,get_grabid_from_queue
 
 from db import ZhihuUserProfile
