@@ -9,6 +9,7 @@ except:
     import http.cookiejar as cookielib
 import re
 import time
+from lxml import html
 import os.path
 from spider import ZhihuSpider
 from queue import __MAX_USER_NUMBER__
@@ -17,6 +18,7 @@ try:
 except:
     pass
 from db import ZhihuUserProfile
+from queue import reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
 
 agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'
 headers = {
@@ -120,6 +122,62 @@ try:
 except:
     pass
 
+# 知乎爬虫引擎
+class ZhihuSpiderStarter():
+    rootid = 'invalid'
+    rootid_is_spector = False
+
+    def __init__(self,header,cookie):
+        self.header = header
+        self.cookie = cookie
+        if not self.get_self_userid():
+            return
+        self.topic = input('请输入需要抓取的领域\n>  ')
+        self.begin_spider_loop()
+        return
+
+    def begin_spider_loop(self):
+        while not is_queue_empty() and get_grabid_total_number() < __MAX_USER_NUMBER__:
+            userid = get_grabid_from_queue()
+            spider = ZhihuSpider(userid,self.topic,self.header,self.cookie)
+            spider.do_spider()
+        if get_grabid_total_number() == 1:
+            userid = input('you are not following any topic:%s spector,you should type in a userid who is a spector\n> '%self.topic)
+            reset_queue_head(userid)
+            self.begin_spider_loop()
+        else:
+            self.print_all_grabbed_user()
+        return
+
+    def print_all_grabbed_user(self):
+        print('we grab user as below:')
+        for user in ZhihuUserProfile.objects:
+            print('%s, %s, %s, %s, 是否已关注:%s'%(user.user_name,user.user_spector,user.user_followee_num,user.user_agree,user.user_isfollow))
+        return
+
+    def get_self_userid(self):
+        url = "https://www.zhihu.com/settings/profile"
+        print('get_self_userid headers:%s'%self.header)
+        try:
+            print('do request')
+            r =  requests.get(url,cookies=self.cookie,headers=self.header,verify=False)
+        except:
+            print('get setting fail')
+            return False
+        if r.status_code != 200:
+            print('check your internet！')
+            return False
+        content = r.text
+        tree = html.fromstring(content)
+        userid = self.process_xpath_source(tree.xpath("//span[@class='token']/text()"))
+        reset_queue_head(userid)
+        return True
+
+    def process_xpath_source(self,source):
+        if source:
+            return source[0]
+        else:
+            return ''
 
 if __name__ == '__main__':
     while (not is_login()):
@@ -129,25 +187,4 @@ if __name__ == '__main__':
         login(account, password)
     print('您已登录')
 
-    ZhihuSpider(headers,session.cookies)
-
-# 知乎爬虫引擎
-class ZhihuSpiderStarter():
-    rootid = 'invalid'
-    rootid_is_spector = False
-
-    def __init__(self,header,cookie):
-        self.header = header
-        self.cookie = cookie
-        self.rootid = self.get_self_userid() #携程？
-        self.topic = input('请输入需要抓取的领域\n>  ')
-        self.begin_spider_loop()
-        return
-
-    def begin_spider_loop(self):
-        return
-
-    def get_self_userid(self):
-        return 
-
-
+    ZhihuSpiderStarter(headers,session.cookies)
