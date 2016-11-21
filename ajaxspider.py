@@ -24,7 +24,6 @@ class AjaxSpider(BaseSpider):
 		return
 
 	def do_spider(self):
-		print('AjaxSpider do_spider index:%s'%self.index)
 		post_url = "https://www.zhihu.com/node/ProfileFolloweesListV2"
  		hash_id = re.findall("hash_id&quot;: &quot;(.*)&quot;},",self.html_source)[0]
  		offset = self.index * 20
@@ -47,12 +46,12 @@ class AjaxSpider(BaseSpider):
  			'Accept-Encoding': "gzip, deflate, br"
  		}
  		r_post = requests.post(post_url,cookies=self.cookies,data=data, headers=header,verify=True)
- 		print('ajaxspider ret.status_code %s'%(r_post.status_code))
  		if r_post.status_code == 200:
  			followee_list = r_post.json()["msg"]
  			for j in range(min(int(self.total_followee_num) - self.index * 20, 20)):
  				self.parse_followee_node(html.fromstring(followee_list[j]))
  		else:
- 			print('error in get porfileFolloweesListV2 page%s'%self.index)
+ 			pass
+ 			#print('error in get porfileFolloweesListV2 page%s'%self.index)
 		return
 

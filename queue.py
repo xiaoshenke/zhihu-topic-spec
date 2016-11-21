@@ -4,11 +4,11 @@ __version__ = '0.1'
 
 from Queue import Queue
 import sys
+from share import __MAX_USER_NUMBER__
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-__MAX_USER_NUMBER__ = 20
 
 grab_id_queue = Queue(__MAX_USER_NUMBER__)
 grab_id_num = 0

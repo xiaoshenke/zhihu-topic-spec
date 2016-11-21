@@ -21,8 +21,10 @@ except:
 #gevent.monkey.patch_socket()
 #gevent.monkey.patch_ssl()
 #import gevent
-
 ########## FIXME: gvent make @get_followees_from_page return Http:403
+
+## FIXME: 有很多check your network 错误
+## TODO: 确保某个网络请求正常 --> 遇到429错误的时候 放入重试列表
 
 from basespider import BaseSpider 
 from queue import add_grabid_to_queue,can_add_to_queue
@@ -30,8 +32,6 @@ from ajaxspider import AjaxSpider
 from share import __PEOPLE_URL__,__FOLLOWEE__
 from db import ZhihuUserProfile
 
-
-# 有的用户的关注比较多 可能有n多页 每一页都需要重新请求 因此把这个封装成一个线程
 class GetFolloweesThread(threading.Thread):
 	def __init__(self,ajaxSpider):
 		self.ajaxSpider = ajaxSpider

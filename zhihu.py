@@ -23,7 +23,9 @@ except:
 from share import spector_lock
 from spider import ZhihuSpider   
 from db import ZhihuUserProfile
-from queue import __MAX_USER_NUMBER__,reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
+from queue import reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
+from share import __MAX_THREAD_COUNT__,__MAX_USER_NUMBER__
+
 
 agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'
 headers = {
@@ -76,7 +78,6 @@ def is_login():
     # 通过查看用户个人信息来判断是否已经登录
     url = "https://www.zhihu.com/settings/profile"
     login_res = session.get(url, headers=headers, allow_redirects=False)
-    print('test is_login %s'%login_res)
     if login_res.status_code == 200:
         return True
     else:
@@ -111,9 +112,6 @@ def login(account,password):
         # 不需要验证码直接登录成功
         login_page = session.post(post_url, data=postdata, headers=headers)
         login_code = login_page.text
-        print('test login_code:%s'%login_page)
-        #print(login_page.status_code)
-        #print(login_code)
     except:
         # 需要输入验证码后才能登录成功
         postdata["captcha"] = get_captcha()
@@ -135,7 +133,6 @@ class ZhihuSpiderStarter():
     def __init__(self,header,cookie):
         self.header = header
         self.cookie = cookie
-        self.try_times = 0
         if not self.get_self_userid():
             return
         self.topic = input('请输入需要抓取的领域\n>  ')
@@ -143,10 +140,16 @@ class ZhihuSpiderStarter():
         return
 
     def begin_spider_loop(self):
+        self.try_times = 0
         while True:
+            if threading.activeCount() >= __MAX_THREAD_COUNT__:
+                time.sleep(0.5)
+                continue
+            else:
+                pass
             spector_lock.acquire()
             if is_queue_empty():
-                if self.try_times >= 2:
+                if self.try_times >= 3:
                     spector_lock.release()
                     break
                 elif get_grabid_total_number() >= __MAX_USER_NUMBER__:
@@ -154,7 +157,7 @@ class ZhihuSpiderStarter():
                     break
                 self.try_times = self.try_times + 1
                 spector_lock.release()
-                time.sleep(0.2) # 睡眠0.2s
+                time.sleep(0.5) # 睡眠0.2s
             else:
                 self.try_times = 0
                 userid = get_grabid_from_queue()
@@ -162,7 +165,6 @@ class ZhihuSpiderStarter():
                 spider = ZhihuSpider(userid,self.topic,self.header,self.cookie) 
                 thread = threading.Thread(target=spider.do_spider)
                 thread.start()
-                time.sleep(0.2)
         if get_grabid_total_number() == 1:
             userid = input('you are not following any topic:%s spector,you should type in a userid who is a spector\n> '%self.topic)
             reset_queue_head(userid)

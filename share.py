@@ -10,6 +10,9 @@ __PEOPLE_URL__ = 'https://www.zhihu.com/people/'
 __FOLLOWEE__ = '/followees' 
 __SPECTOR__ = '话题优秀回答者'
 
+__MAX_THREAD_COUNT__ = 50
+__MAX_USER_NUMBER__ = 50
+
 # 数据存取锁
 spector_lock = threading.Lock()
 

@@ -15,7 +15,6 @@ from queue import add_grabid_to_queue,can_add_to_queue
 from share import __SPECTOR__,spector_lock
 
 # 有两个子类 AjaxSpider,Spider。两者的区别是一个是首页数据,一个是翻页数据。但是每条item的html是一样的,因此parse_node函数可以共用
-# 定义了两个基函数 parse_follwee_node
 class BaseSpider():
 	def __init__(self,topic):
 		self.topic = topic
@@ -43,18 +42,15 @@ class BaseSpider():
  				can_add = can_add_to_queue(userid)
  				if can_add:
  					add_grabid_to_queue(userid)
- 					pass
+ 					self.save_spector(node)
  				else:
  					pass
  				spector_lock.release() #释放
- 				if can_add:
- 					self.save_spector(node)
  			else:
  				pass		
  		return
 
 	def save_spector(self,node):
-		print('begin save_spector')
 		link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
  		user_id = 'invalid user'
  		people_id = re.search(r'(?<=people[/]).+',link)
