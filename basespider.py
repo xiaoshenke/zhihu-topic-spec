@@ -38,16 +38,23 @@ class BaseSpider():
  				if not people_id:
  					return
  				userid = people_id.group(0)
- 				#spector_lock.acquire()     #加锁
- 				if can_add_to_queue(userid):
+ 				can_add = False
+ 				spector_lock.acquire()     #加锁
+ 				can_add = can_add_to_queue(userid)
+ 				if can_add:
+ 					add_grabid_to_queue(userid)
+ 					pass
+ 				else:
+ 					pass
+ 				spector_lock.release() #释放
+ 				if can_add:
  					self.save_spector(node)
- 					#add_grabid_to_queue(userid) # for test,block it
- 				#spector_lock.release() #释放
  			else:
  				pass		
  		return
 
 	def save_spector(self,node):
+		print('begin save_spector')
 		link = node.xpath(".//span[@class='author-link-line']//a/@href")[0]
  		user_id = 'invalid user'
  		people_id = re.search(r'(?<=people[/]).+',link)

@@ -76,5 +76,4 @@ class ZhihuSpider(BaseSpider):
 			ajaxSpider = AjaxSpider(self.userid,self.topic,self.html_source,i,self.followees_total_num,self.cookies)
 			thread = GetFolloweesThread(ajaxSpider)
 			thread.start()
-				#self.get_followees_from_page(i) # TODO: change to AjaxSpider.do_spider --> then to thread
 		return

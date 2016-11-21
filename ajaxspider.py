@@ -47,7 +47,7 @@ class AjaxSpider(BaseSpider):
  			'Accept-Encoding': "gzip, deflate, br"
  		}
  		r_post = requests.post(post_url,cookies=self.cookies,data=data, headers=header,verify=True)
- 		print('index:%s ret.status_code %s'%(self.index,r_post.status_code))
+ 		print('ajaxspider ret.status_code %s'%(r_post.status_code))
  		if r_post.status_code == 200:
  			followee_list = r_post.json()["msg"]
  			for j in range(min(int(self.total_followee_num) - self.index * 20, 20)):

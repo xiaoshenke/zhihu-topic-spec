@@ -44,7 +44,7 @@ def is_queue_empty():
 def can_add_to_queue(grab_id):
 	global grad_id_list
 	global __MAX_USER_NUMBER__
-	if grab_id not in grad_id_list and get_grabid_total_number <= __MAX_USER_NUMBER__:
+	if grab_id not in grad_id_list and get_grabid_total_number() <= __MAX_USER_NUMBER__:
 		return True
 	else:
 		return False

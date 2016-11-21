@@ -8,14 +8,20 @@ try:
 except:
     import http.cookiejar as cookielib
 import re
+
 import time
 from lxml import html
 import os.path
-from spider import ZhihuSpider
+import threading
+
 try:
     from PIL import Image
 except:
     pass
+
+
+from share import spector_lock
+from spider import ZhihuSpider   
 from db import ZhihuUserProfile
 from queue import __MAX_USER_NUMBER__,reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
 
@@ -129,6 +135,7 @@ class ZhihuSpiderStarter():
     def __init__(self,header,cookie):
         self.header = header
         self.cookie = cookie
+        self.try_times = 0
         if not self.get_self_userid():
             return
         self.topic = input('请输入需要抓取的领域\n>  ')
@@ -136,10 +143,26 @@ class ZhihuSpiderStarter():
         return
 
     def begin_spider_loop(self):
-        while not is_queue_empty() and get_grabid_total_number() < __MAX_USER_NUMBER__:
-            userid = get_grabid_from_queue()
-            spider = ZhihuSpider(userid,self.topic,self.header,self.cookie)
-            spider.do_spider()
+        while True:
+            spector_lock.acquire()
+            if is_queue_empty():
+                if self.try_times >= 2:
+                    spector_lock.release()
+                    break
+                elif get_grabid_total_number() >= __MAX_USER_NUMBER__:
+                    spector_lock.release()
+                    break
+                self.try_times = self.try_times + 1
+                spector_lock.release()
+                time.sleep(0.2) # 睡眠0.2s
+            else:
+                self.try_times = 0
+                userid = get_grabid_from_queue()
+                spector_lock.release()
+                spider = ZhihuSpider(userid,self.topic,self.header,self.cookie) 
+                thread = threading.Thread(target=spider.do_spider)
+                thread.start()
+                time.sleep(0.2)
         if get_grabid_total_number() == 1:
             userid = input('you are not following any topic:%s spector,you should type in a userid who is a spector\n> '%self.topic)
             reset_queue_head(userid)
