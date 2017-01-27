@@ -21,7 +21,8 @@ except:
 
 
 from share import spector_lock
-from spider import ZhihuSpider   
+from spider import ZhihuSpider  
+
 from db import ZhihuUserProfile
 from queue import reset_queue_head,get_grabid_total_number,is_queue_empty,get_grabid_from_queue
 from share import __MAX_THREAD_COUNT__,__MAX_USER_NUMBER__
@@ -158,7 +159,7 @@ class ZhihuSpiderStarter():
                     break
                 self.try_times = self.try_times + 1
                 spector_lock.release()
-                time.sleep(0.5) # 睡眠0.2s
+                time.sleep(1) # 睡眠0.2s
             else:
                 self.try_times = 0
                 userid = get_grabid_from_queue()
