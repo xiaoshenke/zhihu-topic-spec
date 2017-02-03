@@ -126,6 +126,11 @@ class ZhihuSpider(BaseSpider):
 		page_num = (int(self.followees_total_num) - 1) / 20 + 1
 		#FIXME nodes only has 3 node,expect to have 20...
 		nodes = self.tree.xpath("//div[@class='List']//div[@class='List-item']")
+		if not self.tree.xpath("//div[@class='CornerButtons']"):
+			print('can not find CornerButtons')
+			return
+		else:
+			print('find CornerButtons')
 		if not nodes:
 			return False
 		print(len(nodes))
